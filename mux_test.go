@@ -44,7 +44,7 @@ func TestPatMatch(t *testing.T) {
 }
 
 func TestPatRoutingHit(t *testing.T) {
-	p := NewPatternServeMux()
+	p := New()
 
 	var ok bool
 	p.Get("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func TestPatRoutingHit(t *testing.T) {
 }
 
 func TestPatRoutingNoHit(t *testing.T) {
-	p := NewPatternServeMux()
+	p := New()
 
 	var ok bool
 	p.Post("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

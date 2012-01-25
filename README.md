@@ -15,7 +15,7 @@
 	)
 	
 	func main() {
-		m := pat.NewPatternServeMux()
+		m := pat.New()
 		m.Get("/hello/:name", http.HandlerFunc(hello))
 		http.ListenAndServe("localhost:5000", m)
 	}

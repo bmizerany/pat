@@ -9,7 +9,7 @@ type PatternServeMux struct {
 	handlers map[string][]*patHandler
 }
 
-func NewPatternServeMux() *PatternServeMux {
+func New() *PatternServeMux {
 	return &PatternServeMux{make(map[string][]*patHandler)}
 }
 
