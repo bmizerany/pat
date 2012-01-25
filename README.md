@@ -1,4 +1,4 @@
-# pat.go - Minimalistic pattern muxer for use with Go's net/http library (like Sinatra's)
+# pat.go - Minimalistic pattern muxer Go's net/http library (like Sinatra's)
 
 ## INSTALL
 
