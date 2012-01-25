@@ -30,8 +30,8 @@ It's that simple.
 
 ## CONTRIBUTORS
 
-Keith Rarick (@krarick) - github.com/kr
-Blake Mizerany (@bmizerany) - github.com/bmizerany
+* Keith Rarick (@krarick) - github.com/kr
+* Blake Mizerany (@bmizerany) - github.com/bmizerany
 
 ## LICENSE
 
