@@ -16,7 +16,7 @@ func New() *PatternServeMux {
 func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, ph := range p.handlers[r.Method] {
 		if params, ok := ph.try(r.URL.Path); ok {
-			r.URL.RawQuery = url.Values(params).Encode() + "&" + r.URL.RawQuery
+			r.URL.RawQuery = fmt.Sprintf("%s&%s", url.Values(params).Encode(), r.URL.RawQuery)
 			ph.ServeHTTP(w, r)
 			return
 		}
