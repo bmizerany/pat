@@ -2,7 +2,7 @@ package pat
 
 import (
 	"testing"
-	"net/http"
+	"http"
 )
 
 func BenchmarkPatternMatching(b *testing.B) {
