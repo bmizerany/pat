@@ -1,8 +1,8 @@
 package pat
 
 import (
-	"net/http"
-	"net/url"
+	"http"
+	"url"
 )
 
 type PatternServeMux struct {

@@ -2,9 +2,9 @@ package pat
 
 import (
 	"github.com/bmizerany/assert"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
+	"http"
+	"http/httptest"
+	"url"
 	"testing"
 )
 
