@@ -53,15 +53,16 @@ type patHandler struct {
 func (ph *patHandler) try(path string) (url.Values, bool) {
 	p := make(url.Values)
 	var i, j int
+splat:
 	for i < len(path) {
 		switch {
 		case j >= len(ph.pat):
 			return nil, false
 		case ph.pat[j] == '*':
 			j++
-			val :=  path[i:]
+			val := path[i:]
 			p.Add(":splat", val)
-			i = len(path)
+			break splat
 		case ph.pat[j] == ':':
 			var name, val string
 			name, j = find(ph.pat, '/', j)
