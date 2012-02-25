@@ -1,3 +1,4 @@
+// pat.go a sinatra like muxer for go.
 package pat
 
 import (
@@ -9,14 +10,18 @@ type PatternServeMux struct {
 	handlers map[string][]*patHandler
 }
 
+// Creates an new *PatternServeMux.
 func New() *PatternServeMux {
 	return &PatternServeMux{make(map[string][]*patHandler)}
 }
 
+// Implements HttpHandler.
 func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, ph := range p.handlers[r.Method] {
 		if params, ok := ph.try(r.URL.Path); ok {
-			r.URL.RawQuery = url.Values(params).Encode() + "&" + r.URL.RawQuery
+			if len(params) > 0 {
+				r.URL.RawQuery = url.Values(params).Encode() + "&" + r.URL.RawQuery
+			}
 			ph.ServeHTTP(w, r)
 			return
 		}
@@ -25,22 +30,27 @@ func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
+// Adds the pattern handler pair for a Get.
 func (p *PatternServeMux) Get(pat string, h http.Handler) {
 	p.Add("GET", pat, h)
 }
 
+// Adds the pattern handler pair for a Post.
 func (p *PatternServeMux) Post(pat string, h http.Handler) {
 	p.Add("POST", pat, h)
 }
 
+// Adds the pattern handler pair for a Put.
 func (p *PatternServeMux) Put(pat string, h http.Handler) {
 	p.Add("PUT", pat, h)
 }
 
+// Adds the pattern handler pair for a Delete.
 func (p *PatternServeMux) Del(pat string, h http.Handler) {
 	p.Add("DELETE", pat, h)
 }
 
+// Adds the pattern handler pair for a HTTP Method meth.
 func (p *PatternServeMux) Add(meth, pat string, h http.Handler) {
 	p.handlers[meth] = append(p.handlers[meth], &patHandler{pat, h})
 }
@@ -55,13 +65,12 @@ func (ph *patHandler) try(path string) (url.Values, bool) {
 	var i, j int
 	for i < len(path) {
 		switch {
+		case j == len(ph.pat) && ph.pat[j-1] == '/':
+			// Should i put a special form variable splat for this case
+			p.Add(":splat", path[i:])
+			return p, true
 		case j >= len(ph.pat):
 			return nil, false
-		case ph.pat[j] == '*':
-			j++
-			val :=  path[i:]
-			p.Add(":splat", val)
-			i = len(path)
 		case ph.pat[j] == ':':
 			var name, val string
 			name, j = find(ph.pat, '/', j)
