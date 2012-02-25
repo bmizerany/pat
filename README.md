@@ -17,7 +17,7 @@
 	func main() {
 		m := pat.New()
 		m.Get("/hello/:name", http.HandlerFunc(hello))
-		m.Get("/splat/*", http.HandlerFunc(splat))
+		m.Get("/splat/", http.HandlerFunc(splat))
 		http.ListenAndServe("localhost:5000", m)
 	}
 	
@@ -40,7 +40,8 @@ It's that simple.
 * Keith Rarick (@krarick) - github.com/kr
 * Blake Mizerany (@bmizerany) - github.com/bmizerany
 * Evan Shaw
-* George Rogers
+* George Rogers - github.com/georgerogers42
+* Matt Nunogawa (@amattn) - github.com/amattn
 
 ## LICENSE
 
