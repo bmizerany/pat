@@ -10,13 +10,14 @@
 	
 	import (
 		"github.com/bmizerany/pat.go"
-		"net/http"
 		"io"
+		"net/http"
 	)
 	
 	func main() {
 		m := pat.New()
 		m.Get("/hello/:name", http.HandlerFunc(hello))
+		m.Get("/splat/*", http.HandlerFunc(splat))
 		http.ListenAndServe("localhost:5000", m)
 	}
 	
@@ -25,6 +26,12 @@
 		name := r.URL.Query().Get(":name")
 		io.WriteString(w, "Hello, "+name)
 	}
+	
+	func splat(w http.ResponseWriter, r *http.Request) {
+		// Path variable names are in the URL.Query() and start with ':'.
+		s := r.URL.Query().Get(":splat")
+		io.WriteString(w, "Splat: "+s)
+	}
 
 It's that simple.
 
@@ -32,6 +39,8 @@ It's that simple.
 
 * Keith Rarick (@krarick) - github.com/kr
 * Blake Mizerany (@bmizerany) - github.com/bmizerany
+* Evan Shaw
+* George Rogers
 
 ## LICENSE
 
