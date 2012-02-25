@@ -44,6 +44,11 @@ func TestPatMatch(t *testing.T) {
 
 	params, ok = (&patHandler{"/foo/", nil}).try("/foo/bar/baz")
 	assert.Equal(t, true, ok)
+	assert.Equal(t, url.Values{":splat": {"bar/baz"}}, params)
+
+	params, ok = (&patHandler{"/foo/", nil}).try("/foo/bar")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, url.Values{":splat": {"bar"}}, params)
 }
 
 func TestPatRoutingHit(t *testing.T) {
