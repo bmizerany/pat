@@ -42,18 +42,8 @@ func TestPatMatch(t *testing.T) {
 	assert.Equal(t, true, ok)
 	assert.Equal(t, url.Values{":name": {"bar"}}, params)
 
-<<<<<<< HEAD
 	params, ok = (&patHandler{"/foo/", nil}).try("/foo/bar/baz")
 	assert.Equal(t, true, ok)
-=======
-	params, ok = (&patHandler{"/foo/*", nil}).try("/foo/bar/baz")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":splat": {"bar/baz"}}, params)
-
-	params, ok = (&patHandler{"/foo/*", nil}).try("/foo/bar")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":splat": {"bar"}}, params)
->>>>>>> ce97829f22552d81ed5cc297590f43d4481a658b
 }
 
 func TestPatRoutingHit(t *testing.T) {
