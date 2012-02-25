@@ -40,7 +40,8 @@ It's that simple.
 * Keith Rarick (@krarick) - github.com/kr
 * Blake Mizerany (@bmizerany) - github.com/bmizerany
 * Evan Shaw
-* George Rogers
+* George Rogers - github.com/georgerogers42
+* Matt Nunogawa (@amattn) - github.com/amattn
 
 ## LICENSE
 
