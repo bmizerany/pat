@@ -59,11 +59,6 @@ func (ph *patHandler) try(path string) (url.Values, bool) {
 		switch {
 		case j >= len(ph.pat):
 			return nil, false
-		case ph.pat[j] == '*':
-			j++
-			val := path[i:]
-			p.Add(":splat", val)
-			i = len(path)
 		case ph.pat[j] == ':':
 			var name, val string
 			name, j = find(ph.pat, '/', j)
