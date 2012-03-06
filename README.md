@@ -1,15 +1,15 @@
-# pat.go - A Sinatra style pattern muxer for Go's net/http library
+# pat (formally pat.go) - A Sinatra style pattern muxer for Go's net/http library
 
 ## INSTALL
 
-	$ go install github.com/bmizerany/pat.go
+	$ go get github.com/bmizerany/pat
 
 ## USE
 
 	package main
 	
 	import (
-		"github.com/bmizerany/pat.go"
+		"github.com/bmizerany/pat"
 		"io"
 		"net/http"
 	)
