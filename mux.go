@@ -123,6 +123,28 @@ func (p *PatternServeMux) Add(meth, pat string, h http.Handler) {
 	p.handlers[meth] = append(p.handlers[meth], &patHandler{pat, h})
 }
 
+func Tail(pat, path string) string {
+	var i, j int
+	for i < len(path) {
+		switch {
+		case j >= len(pat):
+			if pat[len(pat)-1] == '/' {
+				return path[j-1:]
+			}
+			return ""
+		case pat[j] == ':':
+			_, j = find(pat, '/', j)
+			_, i = find(path, '/', i)
+		case path[i] == pat[j]:
+			i++
+			j++
+		default:
+			return ""
+		}
+	}
+	return ""
+}
+
 type patHandler struct {
 	pat string
 	http.Handler

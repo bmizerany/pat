@@ -135,3 +135,25 @@ func TestPatOnlyUserParams(t *testing.T) {
 
 	assert.T(t, ok)
 }
+
+func TestTail(t *testing.T) {
+	if g := Tail("/:a/", "/x/y/z"); g != "y/z" {
+		t.Fatalf("want %q, got %q", "y/z", g)
+	}
+
+	if g := Tail("/:a/", "/x"); g != "" {
+		t.Fatalf("want %q, got %q", "", g)
+	}
+
+	if g := Tail("/:a/", "/x/"); g != "" {
+		t.Fatalf("want %q, got %q", "", g)
+	}
+
+	if g := Tail("/:a", "/x/y/z"); g != "" {
+		t.Fatalf("want: %q, got %q", "", g)
+	}
+
+	if g := Tail("/b/:a", "/x/y/z"); g != "" {
+		t.Fatalf("want: %q, got %q", "", g)
+	}
+}
