@@ -16,6 +16,17 @@ func TestPatMatch(t *testing.T) {
 	params, ok = (&patHandler{"/foo/:name/baz", nil}).try("/foo/bar")
 	assert.Equal(t, false, ok)
 
+	params, ok = (&patHandler{"/foo/:name/bar/", nil}).try("/foo/keith/bar/baz")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, url.Values{":name": {"keith"}}, params)
+
+	params, ok = (&patHandler{"/foo/:name/bar/", nil}).try("/foo/keith/bar/")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, url.Values{":name": {"keith"}}, params)
+
+	params, ok = (&patHandler{"/foo/:name/bar/", nil}).try("/foo/keith/bar")
+	assert.Equal(t, false, ok)
+
 	params, ok = (&patHandler{"/foo/:name/baz", nil}).try("/foo/bar/baz")
 	assert.Equal(t, true, ok)
 	assert.Equal(t, url.Values{":name": {"bar"}}, params)
