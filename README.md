@@ -17,6 +17,8 @@
 	func main() {
 		m := pat.New()
 		m.Get("/hello/:name", http.HandlerFunc(hello))
+		m.Post("/hello/:name"
+
 		http.ListenAndServe("localhost:5000", m)
 	}
 	
