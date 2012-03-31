@@ -46,14 +46,14 @@ import (
 //
 // A trivial example server is:
 //
-//      package main
+//	package main
 //
-//      import (
+//	import (
 //		"io"
 //		"net/http"
 //		"github.com/bmizerany/pat"
 //		"log"
-//      )
+//	)
 //
 //	// hello world, the web server
 //	func HelloServer(w http.ResponseWriter, req *http.Request) {
