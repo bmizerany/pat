@@ -77,7 +77,8 @@ func New() *PatternServeMux {
 	return &PatternServeMux{make(map[string][]*patHandler)}
 }
 
-// ServeHTTP matched r.URL.Path against its routing table.
+// ServeHTTP matches r.URL.Path against its routing table using the rules
+// described above.
 func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, ph := range p.handlers[r.Method] {
 		if params, ok := ph.try(r.URL.Path); ok {
