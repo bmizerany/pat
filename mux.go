@@ -158,9 +158,8 @@ func (ph *patHandler) try(path string) (url.Values, bool) {
 		case j >= len(ph.pat):
 			if ph.pat[len(ph.pat)-1] == '/' {
 				return p, true
-			} else {
-				return nil, false
 			}
+			return nil, false
 		case ph.pat[j] == ':':
 			var name, val string
 			name, j = find(ph.pat, '/', j)
