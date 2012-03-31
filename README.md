@@ -28,6 +28,9 @@
 	
 It's that simple.
 
+For more information, see:
+http://gopkgdoc.appspot.com/pkg/github.com/bmizerany/pat
+
 ## CONTRIBUTORS
 
 * Keith Rarick (@krarick) - github.com/kr
