@@ -123,6 +123,13 @@ func (p *PatternServeMux) Add(meth, pat string, h http.Handler) {
 	p.handlers[meth] = append(p.handlers[meth], &patHandler{pat, h})
 }
 
+// Tail returns the trailing string in path after the final slash for a pat ending with a slash.
+//
+// Examples:
+//
+//	Tail("/hello/:title/", "/hello/mr/mizerany") == "mizerany"
+//	Tail("/:a/", "/x/y/z")                       == "y/z"
+//
 func Tail(pat, path string) string {
 	var i, j int
 	for i < len(path) {
