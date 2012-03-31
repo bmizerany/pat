@@ -33,11 +33,13 @@ import (
 // Will match:
 //   /hello/blake/
 //   /hello/keith/foo
-// Will not match:
 //   /hello/blake
 //   /hello/keith
+// Will not match:
 //   /foo
 //   /foo/bar
+//
+// Patterns ending in slash are 
 //
 // Retrieve the capture from the r.URL.Query().Get(":name") in a handler (note
 // the colon). If a capture name appears more than once, the additional values
@@ -121,6 +123,11 @@ func (p *PatternServeMux) Del(pat string, h http.Handler) {
 // Add will register a pattern with a handler for meth requests.
 func (p *PatternServeMux) Add(meth, pat string, h http.Handler) {
 	p.handlers[meth] = append(p.handlers[meth], &patHandler{pat, h})
+
+	n := len(pat)
+	if n > 0 && pat[n-1] == '/' {
+		p.Add(meth, pat[:n-1], http.RedirectHandler(pat, http.StatusMovedPermanently))
+	}
 }
 
 // Tail returns the trailing string in path after the final slash for a pat ending with a slash.

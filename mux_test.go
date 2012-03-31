@@ -136,6 +136,44 @@ func TestPatOnlyUserParams(t *testing.T) {
 	assert.T(t, ok)
 }
 
+func TestPatImplicitRedirect(t *testing.T) {
+	p := New()
+	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+	r, err := http.NewRequest("GET", "/foo", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res := httptest.NewRecorder()
+	p.ServeHTTP(res, r)
+
+	if res.Code != 301 {
+		t.Errorf("expected Code 301, was %d", res.Code)
+	}
+
+	if loc := res.Header().Get("Location"); loc != "/foo/" {
+		t.Errorf("expected %q, got %q", "/foo/", loc)
+	}
+
+	p = New()
+	p.Get("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+	r, err = http.NewRequest("GET", "/foo", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res = httptest.NewRecorder()
+	res.Code = 200
+	p.ServeHTTP(res, r)
+
+	if res.Code != 200 {
+		t.Errorf("expected Code 200, was %d", res.Code)
+	}
+}
+
 func TestTail(t *testing.T) {
 	if g := Tail("/:a/", "/x/y/z"); g != "y/z" {
 		t.Fatalf("want %q, got %q", "y/z", g)
