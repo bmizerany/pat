@@ -49,25 +49,25 @@ import (
 //      package main
 //
 //      import (
-//              "io"
-//              "net/http"
+//		"io"
+//		"net/http"
 //		"github.com/bmizerany/pat"
-//              "log"
+//		"log"
 //      )
 //
-//      // hello world, the web server
-//      func HelloServer(w http.ResponseWriter, req *http.Request) {
-//              io.WriteString(w, "hello, "+r.URL.Query().Get(":name")+"!\n")
-//      }
+//	// hello world, the web server
+//	func HelloServer(w http.ResponseWriter, req *http.Request) {
+//		io.WriteString(w, "hello, "+r.URL.Query().Get(":name")+"!\n")
+//	}
 //
-//      func main() {
+//	func main() {
 //		m := pat.New()
-//              m.Handle("/hello/:name", http.HandlerFunc(HelloServer))
-//              err := http.ListenAndServe(":12345", m)
-//              if err != nil {
-//                      log.Fatal("ListenAndServe: ", err)
-//              }
-//      }
+//		m.Handle("/hello/:name", http.HandlerFunc(HelloServer))
+//		err := http.ListenAndServe(":12345", m)
+//		if err != nil {
+//			log.Fatal("ListenAndServe: ", err)
+//		}
+//	}
 type PatternServeMux struct {
 	handlers map[string][]*patHandler
 }
