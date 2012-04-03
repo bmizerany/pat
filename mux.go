@@ -39,7 +39,10 @@ import (
 //   /foo
 //   /foo/bar
 //
-// Patterns ending in slash are 
+// A pattern ending with a slash will get an implicit redirect to it's
+// non-slash version.  For example: Get("/foo/", handler) will implicitly
+// register Get("/foo", handler). You may override it by registering
+// Get("/foo", anotherhandler) before the slash version.
 //
 // Retrieve the capture from the r.URL.Query().Get(":name") in a handler (note
 // the colon). If a capture name appears more than once, the additional values
