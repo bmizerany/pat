@@ -9,7 +9,13 @@ import (
 )
 
 func TestPatMatch(t *testing.T) {
-	params, ok := (&patHandler{"/foo/:name", nil}).try("/foo/bar")
+	params, ok := (&patHandler{"/", nil}).try("/")
+	assert.Equal(t, true, ok)
+
+	params, ok = (&patHandler{"/", nil}).try("/wrong_url")
+	assert.Equal(t, false, ok)
+
+	params, ok = (&patHandler{"/foo/:name", nil}).try("/foo/bar")
 	assert.Equal(t, true, ok)
 	assert.Equal(t, url.Values{":name": {"bar"}}, params)
 
