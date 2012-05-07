@@ -103,8 +103,16 @@ func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
+// Head will register a pattern with a handler for HEAD requests.
+func (p *PatternServeMux) Head(pat string, h http.Handler) {
+	p.Add("HEAD", pat, h)
+}
+
 // Get will register a pattern with a handler for GET requests.
+// It also registers pat for HEAD requests. If this needs to be overridden, use
+// Head before Get with pat.
 func (p *PatternServeMux) Get(pat string, h http.Handler) {
+	p.Add("HEAD", pat, h)
 	p.Add("GET", pat, h)
 }
 
