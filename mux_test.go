@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sort"
+	"strings"
 	"testing"
 )
 
@@ -74,11 +76,15 @@ func TestPatRoutingHit(t *testing.T) {
 	assert.T(t, ok)
 }
 
-func TestPatRoutingNoHit(t *testing.T) {
+func TestPatRoutingMethodNotAllowed(t *testing.T) {
 	p := New()
 
 	var ok bool
 	p.Post("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ok = true
+	}))
+
+	p.Put("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ok = true
 	}))
 
@@ -91,7 +97,11 @@ func TestPatRoutingNoHit(t *testing.T) {
 	p.ServeHTTP(rr, r)
 
 	assert.T(t, !ok)
-	assert.Equal(t, http.StatusNotFound, rr.Code)
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	allowed := strings.Split(rr.Header().Get("Allow"), ", ")
+	sort.Strings(allowed)
+	assert.Equal(t, allowed, []string{"POST", "PUT"})
 }
 
 // Check to make sure we don't pollute the Raw Query when we have no parameters

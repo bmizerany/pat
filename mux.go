@@ -4,6 +4,7 @@ package pat
 import (
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // PatternServeMux is an HTTP request multiplexer. It matches the URL of each
@@ -78,6 +79,12 @@ import (
 //		}
 //	}
 //
+// When "Method Not Allowed":
+//
+// Pat knows what methods are allowed given a pattern and a URI. For
+// convenience, PatternServeMux will add the Allow header for requests that
+// match a pattern for a method other than the method requested and set the
+// Status to "405 Method Not Allowed".
 type PatternServeMux struct {
 	handlers map[string][]*patHandler
 }
@@ -100,7 +107,26 @@ func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.NotFound(w, r)
+	allowed := make([]string, 0, len(p.handlers))
+	for meth, handlers := range p.handlers {
+		if meth == r.Method {
+			continue
+		}
+
+		for _, ph := range handlers {
+			if _, ok := ph.try(r.URL.Path); ok {
+				allowed = append(allowed, meth)
+			}
+		}
+	}
+
+	if len(allowed) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+
+	w.Header().Add("Allow", strings.Join(allowed, ", "))
+	http.Error(w, "Method Not Allowed", 405)
 }
 
 // Head will register a pattern with a handler for HEAD requests.
