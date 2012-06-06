@@ -157,6 +157,11 @@ func (p *PatternServeMux) Del(pat string, h http.Handler) {
 	p.Add("DELETE", pat, h)
 }
 
+// Options will register a pattern with a handler for OPTIONS requests.
+func (p *PatternServeMux) Options(pat string, h http.Handler) {
+	p.Add("OPTIONS", pat, h)
+}
+
 // Add will register a pattern with a handler for meth requests.
 func (p *PatternServeMux) Add(meth, pat string, h http.Handler) {
 	p.handlers[meth] = append(p.handlers[meth], &patHandler{pat, h})
