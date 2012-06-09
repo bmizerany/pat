@@ -1,4 +1,9 @@
-// hello.go ported for app engine
+// hello.go ported for appengine
+//
+// this differs from the standard hello.go example in two ways: appengine
+// already provides an http server for you, obviating the need for the
+// ListenAndServe call (with associated logging), and the package must not be
+// called main (appengine reserves package 'main' for the underlying program).
 
 package patexample
 
