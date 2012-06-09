@@ -5,7 +5,7 @@ package patexample
 import (
     "io"
     "net/http"
-    "pat"
+    "github.com/bmizerany/pat"
 )
 
 // hello world, the web server
