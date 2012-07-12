@@ -78,6 +78,9 @@ func TestPatMatch(t *testing.T) {
 	assert.Equal(t, true, ok)
 	assert.Equal(t, url.Values{":": {"val1"}, ":name": {":val2"}}, params)
 
+	params, ok = (&patHandler{"/foo/:name.txt", nil}).try("/foo/bar/baz.txt")
+	assert.Equal(t, false, ok)
+
 	params, ok = (&patHandler{"/foo/x:name", nil}).try("/foo/bar")
 	assert.Equal(t, false, ok)
 

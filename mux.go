@@ -17,9 +17,10 @@ import (
 //
 // Patterns may contain literals or captures. Capture names start with a colon
 // and consist of letters A-Z, a-z, _, and 0-9. The rest of the pattern
-// matches literally. The portion of the URL matching each name ends with the
-// first occurrence of the character in the pattern immediately following the
-// name. It is possible for a name to match the empty string.
+// matches literally. The portion of the URL matching each name ends with an
+// occurrence of the character in the pattern immediately following the name,
+// or a /, whichever comes first. It is possible for a name to match the empty
+// string.
 //
 // Example pattern with one capture:
 //   /hello/:name
@@ -194,7 +195,7 @@ func Tail(pat, path string) string {
 		case pat[j] == ':':
 			var nextc byte
 			_, nextc, j = match(pat, isAlnum, j+1)
-			_, _, i = match(path, func(c byte) bool { return c != nextc }, i)
+			_, _, i = match(path, matchPart(nextc), i)
 		case path[i] == pat[j]:
 			i++
 			j++
@@ -224,7 +225,7 @@ func (ph *patHandler) try(path string) (url.Values, bool) {
 			var name, val string
 			var nextc byte
 			name, nextc, j = match(ph.pat, isAlnum, j+1)
-			val, _, i = match(path, func(c byte) bool { return c != nextc }, i)
+			val, _, i = match(path, matchPart(nextc), i)
 			p.Add(":"+name, val)
 		case path[i] == ph.pat[j]:
 			i++
@@ -237,6 +238,12 @@ func (ph *patHandler) try(path string) (url.Values, bool) {
 		return nil, false
 	}
 	return p, true
+}
+
+func matchPart(b byte) func(byte) bool {
+	return func(c byte) bool {
+		return c != b && c != '/'
+	}
 }
 
 func match(s string, f func(byte) bool, i int) (matched string, next byte, j int) {
