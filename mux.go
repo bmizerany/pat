@@ -15,8 +15,12 @@ import (
 // Pattern matching attempts each pattern in the order in which they were
 // registered.
 //
-// Patterns may contain literals or captures. Captures start with a colon and
-// end with the last character or the first slash encountered.
+// Patterns may contain literals or captures. Capture names start with a colon
+// and consist of letters A-Z, a-z, _, and 0-9. The rest of the pattern
+// matches literally. The portion of the URL matching each name ends with an
+// occurrence of the character in the pattern immediately following the name,
+// or a /, whichever comes first. It is possible for a name to match the empty
+// string.
 //
 // Example pattern with one capture:
 //   /hello/:name
@@ -189,8 +193,9 @@ func Tail(pat, path string) string {
 			}
 			return ""
 		case pat[j] == ':':
-			_, j = find(pat, '/', j)
-			_, i = find(path, '/', i)
+			var nextc byte
+			_, nextc, j = match(pat, isAlnum, j+1)
+			_, _, i = match(path, matchPart(nextc), i)
 		case path[i] == pat[j]:
 			i++
 			j++
@@ -218,9 +223,10 @@ func (ph *patHandler) try(path string) (url.Values, bool) {
 			return nil, false
 		case ph.pat[j] == ':':
 			var name, val string
-			name, j = find(ph.pat, '/', j)
-			val, i = find(path, '/', i)
-			p.Add(name, val)
+			var nextc byte
+			name, nextc, j = match(ph.pat, isAlnum, j+1)
+			val, _, i = match(path, matchPart(nextc), i)
+			p.Add(":"+name, val)
 		case path[i] == ph.pat[j]:
 			i++
 			j++
@@ -234,10 +240,31 @@ func (ph *patHandler) try(path string) (url.Values, bool) {
 	return p, true
 }
 
-func find(s string, c byte, i int) (string, int) {
-	j := i
-	for j < len(s) && s[j] != c {
+func matchPart(b byte) func(byte) bool {
+	return func(c byte) bool {
+		return c != b && c != '/'
+	}
+}
+
+func match(s string, f func(byte) bool, i int) (matched string, next byte, j int) {
+	j = i
+	for j < len(s) && f(s[j]) {
 		j++
 	}
-	return s[i:j], j
+	if j < len(s) {
+		next = s[j]
+	}
+	return s[i:j], next, j
+}
+
+func isAlpha(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+func isDigit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
+}
+
+func isAlnum(ch byte) bool {
+	return isAlpha(ch) || isDigit(ch)
 }

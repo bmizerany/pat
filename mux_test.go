@@ -50,9 +50,36 @@ func TestPatMatch(t *testing.T) {
 	assert.Equal(t, true, ok)
 	assert.Equal(t, url.Values{":name": {"bar", "123"}}, params)
 
-	params, ok = (&patHandler{"/foo/::name", nil}).try("/foo/bar")
+	params, ok = (&patHandler{"/foo/:name.txt", nil}).try("/foo/bar.txt")
 	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{"::name": {"bar"}}, params)
+	assert.Equal(t, url.Values{":name": {"bar"}}, params)
+
+	params, ok = (&patHandler{"/foo/:name", nil}).try("/foo/:bar")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, url.Values{":name": {":bar"}}, params)
+
+	params, ok = (&patHandler{"/foo/:a:b", nil}).try("/foo/val1:val2")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, url.Values{":a": {"val1"}, ":b": {":val2"}}, params)
+
+	params, ok = (&patHandler{"/foo/:a.", nil}).try("/foo/.")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, url.Values{":a": {""}}, params)
+
+	params, ok = (&patHandler{"/foo/:a:b", nil}).try("/foo/:bar")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, url.Values{":a": {""}, ":b": {":bar"}}, params)
+
+	params, ok = (&patHandler{"/foo/:a:b:c", nil}).try("/foo/:bar")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, url.Values{":a": {""}, ":b": {""}, ":c": {":bar"}}, params)
+
+	params, ok = (&patHandler{"/foo/::name", nil}).try("/foo/val1:val2")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, url.Values{":": {"val1"}, ":name": {":val2"}}, params)
+
+	params, ok = (&patHandler{"/foo/:name.txt", nil}).try("/foo/bar/baz.txt")
+	assert.Equal(t, false, ok)
 
 	params, ok = (&patHandler{"/foo/x:name", nil}).try("/foo/bar")
 	assert.Equal(t, false, ok)
