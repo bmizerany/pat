@@ -5,7 +5,7 @@
 	$ go get github.com/bmizerany/pat
 
 ## USE
-
+```go
 	package main
 
 	import (
@@ -32,6 +32,7 @@
 			log.Fatal("ListenAndServe: ", err)
 		}
 	}
+```
 	
 It's that simple.
 
