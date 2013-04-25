@@ -57,23 +57,23 @@ import (
 // A trivial example server is:
 //
 //	package main
-//	
+//
 //	import (
 //		"io"
 //		"net/http"
 //		"github.com/bmizerany/pat"
 //		"log"
 //	)
-//	
+//
 //	// hello world, the web server
 //	func HelloServer(w http.ResponseWriter, req *http.Request) {
 //		io.WriteString(w, "hello, "+req.URL.Query().Get(":name")+"!\n")
 //	}
-//	
+//
 //	func main() {
 //		m := pat.New()
 //		m.Get("/hello/:name", http.HandlerFunc(HelloServer))
-//	
+//
 //		// Register this pat with the default serve mux so that other packages
 //		// may also be exported. (i.e. /debug/pprof/*)
 //		http.Handle("/", m)
@@ -103,6 +103,11 @@ func New() *PatternServeMux {
 func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, ph := range p.handlers[r.Method] {
 		if params, ok := ph.try(r.URL.Path); ok {
+			if ph.isRedirect {
+				http.Redirect(w, r, buildUrlWithSlash(r), http.StatusMovedPermanently)
+				return
+			}
+
 			if len(params) > 0 {
 				r.URL.RawQuery = url.Values(params).Encode() + "&" + r.URL.RawQuery
 			}
@@ -168,12 +173,26 @@ func (p *PatternServeMux) Options(pat string, h http.Handler) {
 
 // Add will register a pattern with a handler for meth requests.
 func (p *PatternServeMux) Add(meth, pat string, h http.Handler) {
-	p.handlers[meth] = append(p.handlers[meth], &patHandler{pat, h})
+	p.handlers[meth] = append(p.handlers[meth], &patHandler{pat, h, false})
 
 	n := len(pat)
 	if n > 0 && pat[n-1] == '/' {
-		p.Add(meth, pat[:n-1], http.RedirectHandler(pat, http.StatusMovedPermanently))
+		p.handlers[meth] = append(p.handlers[meth], &patHandler{pat[:n-1], h, true})
 	}
+}
+
+func buildUrlWithSlash(r *http.Request) string {
+	result := r.URL.Path + "/"
+
+	if len(r.URL.Query()) != 0 {
+		result = result + "?" + r.URL.RawQuery
+	}
+
+	if len(r.URL.Fragment) != 0 {
+		result = result + "#" + r.URL.Fragment
+	}
+
+	return result
 }
 
 // Tail returns the trailing string in path after the final slash for a pat ending with a slash.
@@ -209,6 +228,7 @@ func Tail(pat, path string) string {
 type patHandler struct {
 	pat string
 	http.Handler
+	isRedirect bool
 }
 
 func (ph *patHandler) try(path string) (url.Values, bool) {
