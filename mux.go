@@ -168,16 +168,16 @@ func (p *PatternServeMux) Options(pat string, h http.Handler) {
 
 // Add will register a pattern with a handler for meth requests.
 func (p *PatternServeMux) Add(meth, pat string, h http.Handler) {
-	n := &patHandler{pat, h})
+	ph := &patHandler{pat, h}
 	if m, ok := p.handlers[meth]; ok {
-		for i, p := range m {
-			if p.pat == pat {
-				p.handlers[meth][i] = n
+		for i, patH := range m {
+			if patH.pat == pat {
+				p.handlers[meth][i] = ph
 				return
 			}
 		}
 	}
-	p.handlers[meth] = append(p.handlers[meth], n) 
+	p.handlers[meth] = append(p.handlers[meth], ph)
 
 	n := len(pat)
 	if n > 0 && pat[n-1] == '/' {
