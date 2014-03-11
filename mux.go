@@ -189,7 +189,7 @@ func Tail(pat, path string) string {
 		switch {
 		case j >= len(pat):
 			if pat[len(pat)-1] == '/' {
-				return path[j-1:]
+				return path[i:]
 			}
 			return ""
 		case pat[j] == ':':
