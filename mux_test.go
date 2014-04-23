@@ -228,6 +228,8 @@ func TestTail(t *testing.T) {
 		{"/:a/", "/x/", ""},
 		{"/:a", "/x/y/z", ""},
 		{"/b/:a", "/x/y/z", ""},
+		{"/hello/:title/", "/hello/mr/mizerany", "mizerany"},
+		{"/:a/", "/x/y/z", "y/z"},
 	} {
 		tail := Tail(test.pat, test.path)
 		if tail != test.expect {
