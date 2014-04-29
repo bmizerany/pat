@@ -8,9 +8,10 @@
 package patexample
 
 import (
-	"github.com/bmizerany/pat"
 	"io"
 	"net/http"
+
+	"github.com/bmizerany/pat"
 )
 
 // hello world, the web server

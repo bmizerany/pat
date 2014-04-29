@@ -1,13 +1,14 @@
 package pat
 
 import (
-	"github.com/bmizerany/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/bmizerany/assert"
 )
 
 func TestPatMatch(t *testing.T) {

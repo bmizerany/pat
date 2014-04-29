@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/bmizerany/pat"
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/bmizerany/pat"
 )
 
 // hello world, the web server
