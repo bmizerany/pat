@@ -1,10 +1,10 @@
 package main
 
 import (
-	"io"
-	"net/http"
 	"github.com/bmizerany/pat"
+	"io"
 	"log"
+	"net/http"
 )
 
 // hello world, the web server
