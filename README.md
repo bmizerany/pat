@@ -1,4 +1,5 @@
-# pat - A Sinatra style pattern muxer for Go's net/http library
+# Pat
+ A Sinatra style pattern muxer for Go's net/http library.
 
 This was originally created by [Blake Mizerany](https://github.com/bmizerany). This fork is just some improvements/tweaks to some issues that I've encountered.
 
