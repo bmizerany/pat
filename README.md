@@ -1,51 +1,86 @@
-# pat (formerly pat.go) - A Sinatra style pattern muxer for Go's net/http library
+# pat - A Sinatra style pattern muxer for Go's net/http library
 
-## INSTALL
+This was originally created by [Blake Mizerany](https://github.com/bmizerany). This fork is just some improvements/tweaks to some issues that I've encountered.
 
-	$ go get github.com/bmizerany/pat
+## Installation
 
-## USE
+	$ go get github.com/unrolled/pat
 
-	package main
+## Usage
 
-	import (
-		"io"
-		"net/http"
-		"github.com/bmizerany/pat"
-		"log"
-	)
+~~~ go
+// main.go
+package main
 
-	// hello world, the web server
-	func HelloServer(w http.ResponseWriter, req *http.Request) {
-		io.WriteString(w, "hello, "+req.URL.Query().Get(":name")+"!\n")
-	}
+import (
+  "net/http"
 
-	func main() {
-		m := pat.New()
-		m.Get("/hello/:name", http.HandlerFunc(HelloServer))
+  "github.com/unrolled/pat"
+)
 
-		// Register this pat with the default serve mux so that other packages
-		// may also be exported. (i.e. /debug/pprof/*)
-		http.Handle("/", m)
-		err := http.ListenAndServe(":12345", nil)
-		if err != nil {
-			log.Fatal("ListenAndServe: ", err)
-		}
-	}
+func main() {
+  mux := pat.New()
+  mux.GetFunc("/hello/:name", func(w http.ResponseWriter, req *http.Request) {
+    w.Write([]byte("Hello, " + req.URL.Query().Get(":name") + "!\n"))
+  })
+
+  // Register this pat with the default serve mux so that other packages
+  // may also be exported. (i.e. /debug/pprof/*)
+  http.Handle("/", mux)
+  http.ListenAndServe(":3000", nil)
+}
+~~~
 
 It's that simple.
 
-For more information, see:
-http://godoc.org/github.com/bmizerany/pat
+### 404 - Not Found
 
-## CONTRIBUTORS
+You can also define a custom 404 handler:
+
+~~~ go
+// main.go
+package main
+
+import (
+  "net/http"
+
+  "github.com/unrolled/pat"
+)
+
+func main() {
+  mux := pat.New()
+  mux.GetFunc("/hello/:name", func(w http.ResponseWriter, req *http.Request) {
+    w.Write([]byte("Hello, " + req.URL.Query().Get(":name") + "!\n"))
+  })
+
+  mux.SetNotFoundHandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+    w.WriteHeader(http.StatusNotFound)
+    w.Write([]byte("Oops! You're lost!"))
+  })
+
+  http.Handle("/", mux)
+  http.ListenAndServe(":3000", nil)
+}
+~~~
+
+For more information, see:
+http://godoc.org/github.com/unrolled/pat
+
+## Additions for this fork
+
+- Added PATCH method.
+- Removed dependecy on bmizerany/assert for testing.
+- Added ability to set custom not found handler.
+
+## Contributors
 
 * Keith Rarick (@krarick) - github.com/kr
 * Blake Mizerany (@bmizerany) - github.com/bmizerany
 * Evan Shaw
 * George Rogers
+* Cory Jacobsen (@coryjacobsen) - github.com/unrolled
 
-## LICENSE
+## License
 
 Copyright (C) 2012 by Keith Rarick, Blake Mizerany
 

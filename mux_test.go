@@ -121,6 +121,10 @@ func TestPatRoutingMethodNotAllowed(t *testing.T) {
 		ok = true
 	}))
 
+	p.Patch("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ok = true
+	}))
+
 	r, err := http.NewRequest("GET", "/foo/keith", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -134,7 +138,7 @@ func TestPatRoutingMethodNotAllowed(t *testing.T) {
 
 	allowed := strings.Split(rr.Header().Get("Allow"), ", ")
 	sort.Strings(allowed)
-	deepExpect(t, allowed, []string{"POST", "PUT"})
+	deepExpect(t, allowed, []string{"PATCH", "POST", "PUT"})
 }
 
 // Check to make sure we don't pollute the Raw Query when we have no parameters
@@ -237,6 +241,55 @@ func TestTail(t *testing.T) {
 				i, test.pat, test.path, tail, test.expect)
 		}
 	}
+}
+
+func TestCustomNotFound(t *testing.T) {
+	p := New()
+	p.SetNotFoundHandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(299)
+		w.Write([]byte("Custom message here"))
+	})
+
+	r, err := http.NewRequest("GET", "/foo", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res := httptest.NewRecorder()
+	p.ServeHTTP(res, r)
+
+	expect(t, res.Code, 299)
+	expect(t, res.Body.String(), "Custom message here")
+
+	// Handler version.
+	p = New()
+	p.SetNotFoundHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte("Custom message here"))
+	}))
+
+	r, err = http.NewRequest("GET", "/foo", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res = httptest.NewRecorder()
+	p.ServeHTTP(res, r)
+
+	expect(t, res.Code, 404)
+	expect(t, res.Body.String(), "Custom message here")
+
+	// Normal not found.
+	p = New()
+	r, err = http.NewRequest("GET", "/foo", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res = httptest.NewRecorder()
+	p.ServeHTTP(res, r)
+
+	expect(t, res.Code, 404)
 }
 
 /* Test Helpers */

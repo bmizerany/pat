@@ -61,7 +61,7 @@ import (
 //	import (
 //		"io"
 //		"net/http"
-//		"github.com/bmizerany/pat"
+//		"github.com/unrolled/pat"
 //		"log"
 //	)
 //
@@ -89,13 +89,18 @@ import (
 // convenience, PatternServeMux will add the Allow header for requests that
 // match a pattern for a method other than the method requested and set the
 // Status to "405 Method Not Allowed".
+
 type PatternServeMux struct {
+	notFound http.Handler
 	handlers map[string][]*patHandler
 }
 
 // New returns a new PatternServeMux.
 func New() *PatternServeMux {
-	return &PatternServeMux{make(map[string][]*patHandler)}
+	return &PatternServeMux{
+		notFound: http.NotFoundHandler(),
+		handlers: make(map[string][]*patHandler),
+	}
 }
 
 // ServeHTTP matches r.URL.Path against its routing table using the rules
@@ -125,7 +130,7 @@ func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(allowed) == 0 {
-		http.NotFound(w, r)
+		p.notFound.ServeHTTP(w, r)
 		return
 	}
 
@@ -156,6 +161,11 @@ func (p *PatternServeMux) Put(pat string, h http.Handler) {
 	p.Add("PUT", pat, h)
 }
 
+// Patch will register a pattern with a handler for PATCH requests.
+func (p *PatternServeMux) Patch(pat string, h http.Handler) {
+	p.Add("PATCH", pat, h)
+}
+
 // Del will register a pattern with a handler for DELETE requests.
 func (p *PatternServeMux) Del(pat string, h http.Handler) {
 	p.Add("DELETE", pat, h)
@@ -174,6 +184,49 @@ func (p *PatternServeMux) Add(meth, pat string, h http.Handler) {
 	if n > 0 && pat[n-1] == '/' {
 		p.Add(meth, pat[:n-1], http.RedirectHandler(pat, http.StatusMovedPermanently))
 	}
+}
+
+// HeadFunc is like Head, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) HeadFunc(pat string, f http.HandlerFunc) {
+	p.Head(pat, f)
+}
+
+// GetFunc is like Get, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) GetFunc(pat string, f http.HandlerFunc) {
+	p.Get(pat, f)
+}
+
+// PostFunc is like Post, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) PostFunc(pat string, f http.HandlerFunc) {
+	p.Post(pat, f)
+}
+
+// PutFunc is like Put, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) PutFunc(pat string, f http.HandlerFunc) {
+	p.Put(pat, f)
+}
+
+// PatchFunc is like Patch, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) PatchFunc(pat string, f http.HandlerFunc) {
+	p.Patch(pat, f)
+}
+
+// DelFunc is like Del, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) DelFunc(pat string, f http.HandlerFunc) {
+	p.Del(pat, f)
+}
+
+// OptionsFunc is like Options, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) OptionsFunc(pat string, f http.HandlerFunc) {
+	p.Options(pat, f)
+}
+
+func (p *PatternServeMux) SetNotFoundHandler(h http.Handler) {
+	p.notFound = h
+}
+
+func (p *PatternServeMux) SetNotFoundHandlerFunc(f http.HandlerFunc) {
+	p.notFound = f
 }
 
 // Tail returns the trailing string in path after the final slash for a pat ending with a slash.
