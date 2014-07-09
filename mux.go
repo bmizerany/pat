@@ -176,6 +176,21 @@ func (p *PatternServeMux) Add(meth, pat string, h http.Handler) {
 	}
 }
 
+// GetFunc is like Get, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) GetFunc(pat string, f http.HandlerFunc) { p.Get(pat, f) }
+
+// PostFunc is like Post, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) PostFunc(pat string, f http.HandlerFunc) { p.Post(pat, f) }
+
+// PutFunc is like Put, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) PutFunc(pat string, f http.HandlerFunc) { p.Put(pat, f) }
+
+// DelFunc is like Del, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) DelFunc(pat string, f http.HandlerFunc) { p.Del(pat, f) }
+
+// OptionsFunc is like Options, but it takes an http.HandlerFunc instead of an http.Handler.
+func (p *PatternServeMux) OptionsFunc(pat string, f http.HandlerFunc) { p.Options(pat, f) }
+
 // Tail returns the trailing string in path after the final slash for a pat ending with a slash.
 //
 // Examples:
