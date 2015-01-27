@@ -13,7 +13,7 @@ import (
 // URL.
 //
 // Pattern matching attempts each pattern in the order in which they were
-// registered.
+// registered and selects the longest matching pattern.
 //
 // Patterns may contain literals or captures. Capture names start with a colon
 // and consist of letters A-Z, a-z, _, and 0-9. The rest of the pattern
@@ -101,14 +101,24 @@ func New() *PatternServeMux {
 // ServeHTTP matches r.URL.Path against its routing table using the rules
 // described above.
 func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var h http.Handler
+	var b int
+	var par url.Values
 	for _, ph := range p.handlers[r.Method] {
 		if params, ok := ph.try(r.URL.Path); ok {
-			if len(params) > 0 {
-				r.URL.RawQuery = url.Values(params).Encode() + "&" + r.URL.RawQuery
+			if len(ph.pat) > b {
+				h = ph
+				b = len(ph.pat)
+				par = params
 			}
-			ph.ServeHTTP(w, r)
-			return
 		}
+	}
+	if h != nil {
+		if len(par) > 0 {
+			r.URL.RawQuery = url.Values(par).Encode() + "&" + r.URL.RawQuery
+		}
+		h.ServeHTTP(w, r)
+		return
 	}
 
 	allowed := make([]string, 0, len(p.handlers))
