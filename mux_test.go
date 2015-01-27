@@ -239,3 +239,22 @@ func TestTail(t *testing.T) {
 		}
 	}
 }
+
+func TestLongestMatch(t *testing.T) {
+	p := New()
+	var ok bool
+	p.Get("/foo/:variable", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("failed test: shorter pattern was matched")
+	}))
+	p.Get("/foo/longerpath", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ok = true
+	}))
+
+	r, err := http.NewRequest("GET", "/foo/longerpath", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p.ServeHTTP(httptest.NewRecorder(), r)
+	assert.T(t, ok)
+}
