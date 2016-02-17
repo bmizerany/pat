@@ -1,6 +1,6 @@
 # pat (formerly pat.go) - A Sinatra style pattern muxer for Go's net/http library
 
-[![GoDoc](http://godoc.org/github.com/bmizerany/pat?status.svg)](http://godoc.org/github.com/bmizerany/pat) 
+[![GoDoc](https://godoc.org/github.com/bmizerany/pat?status.svg)](https://godoc.org/github.com/bmizerany/pat) 
 
 ## INSTALL
 
