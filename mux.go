@@ -179,6 +179,11 @@ func (p *PatternServeMux) Options(pat string, h http.Handler) {
 	p.Add("OPTIONS", pat, h)
 }
 
+// Patch will register a pattern with a handler for PATCH requests.
+func (p *PatternServeMux) Patch(pat string, h http.Handler) {
+	p.Add("PATCH", pat, h)
+}
+
 // Add will register a pattern with a handler for meth requests.
 func (p *PatternServeMux) Add(meth, pat string, h http.Handler) {
 	p.add(meth, pat, h, false)

@@ -229,3 +229,36 @@ func newRequest(method, urlStr string, body io.Reader) *http.Request {
 	}
 	return req
 }
+
+func TestMethodMatch(t *testing.T) {
+	p := New()
+	p.Patch("/foo/bar", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+	// Test to see if we get a 405 Method Not Allowed errors from trying to
+	// issue a GET request to a handler that only supports the PATCH method.
+	req, err := http.NewRequest("GET", "/foo/bar", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp := httptest.NewRecorder()
+	resp.Code = http.StatusMethodNotAllowed
+	p.ServeHTTP(resp, req)
+	if resp.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected code 405, got %d", resp.Code)
+	}
+
+	// Now, test to see if we get a 200 OK from issuing a PATCH request to
+	// the same handler.
+	req, err = http.NewRequest("PATCH", "/foo/bar", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp = httptest.NewRecorder()
+	resp.Code = http.StatusOK
+	p.ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Errorf("Expected code %d, got %d", http.StatusOK, resp.Code)
+	}
+}
