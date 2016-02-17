@@ -44,10 +44,20 @@ http://godoc.org/github.com/bmizerany/pat
 
 ## CONTRIBUTORS
 
-* Keith Rarick (@krarick) - github.com/kr
-* Blake Mizerany (@bmizerany) - github.com/bmizerany
-* Evan Shaw
-* George Rogers
+* Alexis Svinartchouk (@zvin)
+* Blake Mizerany (@bmizerany)
+* Brian Ketelsen (@bketelsen)
+* Bryan Matsuo (@bmatsuo)
+* Caleb Spare (@cespare)
+* Evan Shaw (@edsrzf)
+* Gary Burd (@garyburd)
+* George Rogers (@georgerogers42)
+* Keith Rarick (@kr)
+* Matt Williams (@mattyw)
+* Mike Stipicevic (@wickedchicken)
+* Nick Saika (@nesv)
+* Timothy Cyrus (@tcyrus)
+* binqin (@binku87)
 
 ## LICENSE
 
