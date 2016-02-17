@@ -40,7 +40,7 @@ func TestPatMatch(t *testing.T) {
 		{"/foo/x:name", "/foo/bar", false, nil},
 		{"/foo/x:name", "/foo/xbar", true, url.Values{":name": {"bar"}}},
 	} {
-		params, ok := (&patHandler{tt.pat, nil}).try(tt.u)
+		params, ok := (&patHandler{pat: tt.pat}).try(tt.u)
 		if !tt.match {
 			if ok {
 				t.Errorf("[%d] url %q matched pattern %q", i, tt.u, tt.pat)
@@ -152,29 +152,35 @@ func TestPatImplicitRedirect(t *testing.T) {
 	p := New()
 	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
-	r := newRequest("GET", "/foo", nil)
 	res := httptest.NewRecorder()
-	p.ServeHTTP(res, r)
-
+	p.ServeHTTP(res, newRequest("GET", "/foo", nil))
 	if res.Code != 301 {
-		t.Errorf("expected Code 301, was %d", res.Code)
+		t.Errorf("got Code %d; want 301", res.Code)
 	}
-
 	if loc := res.Header().Get("Location"); loc != "/foo/" {
-		t.Errorf("expected %q, got %q", "/foo/", loc)
+		t.Errorf("got %q; want %q", loc, "/foo/")
 	}
 
 	p = New()
 	p.Get("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
-	r = newRequest("GET", "/foo", nil)
 	res = httptest.NewRecorder()
-	res.Code = 200
-	p.ServeHTTP(res, r)
-
+	p.ServeHTTP(res, newRequest("GET", "/foo", nil))
 	if res.Code != 200 {
-		t.Errorf("expected Code 200, was %d", res.Code)
+		t.Errorf("got %d; want Code 200", res.Code)
+	}
+
+	p = New()
+	p.Get("/hello/:name/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+	res = httptest.NewRecorder()
+	p.ServeHTTP(res, newRequest("GET", "/hello/bob?a=b#f", nil))
+	if res.Code != 301 {
+		t.Errorf("got code %d; want 301", res.Code)
+	}
+	if got, want := res.Header().Get("Location"), "/hello/bob/?a=b#f"; got != want {
+		t.Errorf("got %q; want %q", got, want)
 	}
 }
 
