@@ -1,93 +1,65 @@
 package pat
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
-
-	"github.com/bmizerany/assert"
 )
 
 func TestPatMatch(t *testing.T) {
-	params, ok := (&patHandler{"/", nil}).try("/")
-	assert.Equal(t, true, ok)
-
-	params, ok = (&patHandler{"/", nil}).try("/wrong_url")
-	assert.Equal(t, false, ok)
-
-	params, ok = (&patHandler{"/foo/:name", nil}).try("/foo/bar")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":name": {"bar"}}, params)
-
-	params, ok = (&patHandler{"/foo/:name/baz", nil}).try("/foo/bar")
-	assert.Equal(t, false, ok)
-
-	params, ok = (&patHandler{"/foo/:name/bar/", nil}).try("/foo/keith/bar/baz")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":name": {"keith"}}, params)
-
-	params, ok = (&patHandler{"/foo/:name/bar/", nil}).try("/foo/keith/bar/")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":name": {"keith"}}, params)
-
-	params, ok = (&patHandler{"/foo/:name/bar/", nil}).try("/foo/keith/bar")
-	assert.Equal(t, false, ok)
-
-	params, ok = (&patHandler{"/foo/:name/baz", nil}).try("/foo/bar/baz")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":name": {"bar"}}, params)
-
-	params, ok = (&patHandler{"/foo/:name/baz/:id", nil}).try("/foo/bar/baz")
-	assert.Equal(t, false, ok)
-
-	params, ok = (&patHandler{"/foo/:name/baz/:id", nil}).try("/foo/bar/baz/123")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":name": {"bar"}, ":id": {"123"}}, params)
-
-	params, ok = (&patHandler{"/foo/:name/baz/:name", nil}).try("/foo/bar/baz/123")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":name": {"bar", "123"}}, params)
-
-	params, ok = (&patHandler{"/foo/:name.txt", nil}).try("/foo/bar.txt")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":name": {"bar"}}, params)
-
-	params, ok = (&patHandler{"/foo/:name", nil}).try("/foo/:bar")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":name": {":bar"}}, params)
-
-	params, ok = (&patHandler{"/foo/:a:b", nil}).try("/foo/val1:val2")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":a": {"val1"}, ":b": {":val2"}}, params)
-
-	params, ok = (&patHandler{"/foo/:a.", nil}).try("/foo/.")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":a": {""}}, params)
-
-	params, ok = (&patHandler{"/foo/:a:b", nil}).try("/foo/:bar")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":a": {""}, ":b": {":bar"}}, params)
-
-	params, ok = (&patHandler{"/foo/:a:b:c", nil}).try("/foo/:bar")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":a": {""}, ":b": {""}, ":c": {":bar"}}, params)
-
-	params, ok = (&patHandler{"/foo/::name", nil}).try("/foo/val1:val2")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":": {"val1"}, ":name": {":val2"}}, params)
-
-	params, ok = (&patHandler{"/foo/:name.txt", nil}).try("/foo/bar/baz.txt")
-	assert.Equal(t, false, ok)
-
-	params, ok = (&patHandler{"/foo/x:name", nil}).try("/foo/bar")
-	assert.Equal(t, false, ok)
-
-	params, ok = (&patHandler{"/foo/x:name", nil}).try("/foo/xbar")
-	assert.Equal(t, true, ok)
-	assert.Equal(t, url.Values{":name": {"bar"}}, params)
+	for i, tt := range []struct {
+		pat   string
+		u     string
+		match bool
+		vals  url.Values
+	}{
+		{"/", "/", true, nil},
+		{"/", "/wrong_url", false, nil},
+		{"/foo/:name", "/foo/bar", true, url.Values{":name": {"bar"}}},
+		{"/foo/:name/baz", "/foo/bar", false, nil},
+		{"/foo/:name/bar/", "/foo/keith/bar/baz", true, url.Values{":name": {"keith"}}},
+		{"/foo/:name/bar/", "/foo/keith/bar/", true, url.Values{":name": {"keith"}}},
+		{"/foo/:name/bar/", "/foo/keith/bar", false, nil},
+		{"/foo/:name/baz", "/foo/bar/baz", true, url.Values{":name": {"bar"}}},
+		{"/foo/:name/baz/:id", "/foo/bar/baz", false, nil},
+		{"/foo/:name/baz/:id", "/foo/bar/baz/123", true, url.Values{":name": {"bar"}, ":id": {"123"}}},
+		{"/foo/:name/baz/:name", "/foo/bar/baz/123", true, url.Values{":name": {"bar", "123"}}},
+		{"/foo/:name.txt", "/foo/bar.txt", true, url.Values{":name": {"bar"}}},
+		{"/foo/:name", "/foo/:bar", true, url.Values{":name": {":bar"}}},
+		{"/foo/:a:b", "/foo/val1:val2", true, url.Values{":a": {"val1"}, ":b": {":val2"}}},
+		{"/foo/:a.", "/foo/.", true, url.Values{":a": {""}}},
+		{"/foo/:a:b", "/foo/:bar", true, url.Values{":a": {""}, ":b": {":bar"}}},
+		{"/foo/:a:b:c", "/foo/:bar", true, url.Values{":a": {""}, ":b": {""}, ":c": {":bar"}}},
+		{"/foo/::name", "/foo/val1:val2", true, url.Values{":": {"val1"}, ":name": {":val2"}}},
+		{"/foo/:name.txt", "/foo/bar/baz.txt", false, nil},
+		{"/foo/x:name", "/foo/bar", false, nil},
+		{"/foo/x:name", "/foo/xbar", true, url.Values{":name": {"bar"}}},
+	} {
+		params, ok := (&patHandler{tt.pat, nil}).try(tt.u)
+		if !tt.match {
+			if ok {
+				t.Errorf("[%d] url %q matched pattern %q", i, tt.u, tt.pat)
+			}
+			continue
+		}
+		if !ok {
+			t.Errorf("[%d] url %q did not match pattern %q", i, tt.u, tt.pat)
+			continue
+		}
+		if tt.vals != nil {
+			if !reflect.DeepEqual(params, tt.vals) {
+				t.Errorf(
+					"[%d] for url %q, pattern %q: got %v; want %v",
+					i, tt.u, tt.pat, params, tt.vals,
+				)
+			}
+		}
+	}
 }
 
 func TestPatRoutingHit(t *testing.T) {
@@ -97,17 +69,15 @@ func TestPatRoutingHit(t *testing.T) {
 	p.Get("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ok = true
 		t.Logf("%#v", r.URL.Query())
-		assert.Equal(t, "keith", r.URL.Query().Get(":name"))
+		if got, want := r.URL.Query().Get(":name"), "keith"; got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
 	}))
 
-	r, err := http.NewRequest("GET", "/foo/keith?a=b", nil)
-	if err != nil {
-		t.Fatal(err)
+	p.ServeHTTP(nil, newRequest("GET", "/foo/keith?a=b", nil))
+	if !ok {
+		t.Error("handler not called")
 	}
-
-	p.ServeHTTP(nil, r)
-
-	assert.T(t, ok)
 }
 
 func TestPatRoutingMethodNotAllowed(t *testing.T) {
@@ -122,20 +92,22 @@ func TestPatRoutingMethodNotAllowed(t *testing.T) {
 		ok = true
 	}))
 
-	r, err := http.NewRequest("GET", "/foo/keith", nil)
-	if err != nil {
-		t.Fatal(err)
+	r := httptest.NewRecorder()
+	p.ServeHTTP(r, newRequest("GET", "/foo/keith", nil))
+
+	if ok {
+		t.Fatal("handler called when it should have not been allowed")
+	}
+	if r.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("got status %d; expected %d", r.Code, http.StatusMethodNotAllowed)
 	}
 
-	rr := httptest.NewRecorder()
-	p.ServeHTTP(rr, r)
-
-	assert.T(t, !ok)
-	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
-
-	allowed := strings.Split(rr.Header().Get("Allow"), ", ")
-	sort.Strings(allowed)
-	assert.Equal(t, allowed, []string{"POST", "PUT"})
+	got := strings.Split(r.Header().Get("Allow"), ", ")
+	sort.Strings(got)
+	want := []string{"POST", "PUT"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got Allow header %v; want %v", got, want)
+	}
 }
 
 // Check to make sure we don't pollute the Raw Query when we have no parameters
@@ -146,17 +118,15 @@ func TestPatNoParams(t *testing.T) {
 	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ok = true
 		t.Logf("%#v", r.URL.RawQuery)
-		assert.Equal(t, "", r.URL.RawQuery)
+		if r.URL.RawQuery != "" {
+			t.Errorf("RawQuery was %q; should be empty", r.URL.RawQuery)
+		}
 	}))
 
-	r, err := http.NewRequest("GET", "/foo/", nil)
-	if err != nil {
-		t.Fatal(err)
+	p.ServeHTTP(nil, newRequest("GET", "/foo/", nil))
+	if !ok {
+		t.Error("handler not called")
 	}
-
-	p.ServeHTTP(nil, r)
-
-	assert.T(t, ok)
 }
 
 // Check to make sure we don't pollute the Raw Query when there are parameters but no pattern variables
@@ -167,28 +137,22 @@ func TestPatOnlyUserParams(t *testing.T) {
 	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ok = true
 		t.Logf("%#v", r.URL.RawQuery)
-		assert.Equal(t, "a=b", r.URL.RawQuery)
+		if got, want := r.URL.RawQuery, "a=b"; got != want {
+			t.Errorf("for RawQuery: got %q; want %q", got, want)
+		}
 	}))
 
-	r, err := http.NewRequest("GET", "/foo/?a=b", nil)
-	if err != nil {
-		t.Fatal(err)
+	p.ServeHTTP(nil, newRequest("GET", "/foo/?a=b", nil))
+	if !ok {
+		t.Error("handler not called")
 	}
-
-	p.ServeHTTP(nil, r)
-
-	assert.T(t, ok)
 }
 
 func TestPatImplicitRedirect(t *testing.T) {
 	p := New()
 	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
-	r, err := http.NewRequest("GET", "/foo", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	r := newRequest("GET", "/foo", nil)
 	res := httptest.NewRecorder()
 	p.ServeHTTP(res, r)
 
@@ -204,11 +168,7 @@ func TestPatImplicitRedirect(t *testing.T) {
 	p.Get("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
-	r, err = http.NewRequest("GET", "/foo", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	r = newRequest("GET", "/foo", nil)
 	res = httptest.NewRecorder()
 	res.Code = 200
 	p.ServeHTTP(res, r)
@@ -238,4 +198,12 @@ func TestTail(t *testing.T) {
 				i, test.pat, test.path, tail, test.expect)
 		}
 	}
+}
+
+func newRequest(method, urlStr string, body io.Reader) *http.Request {
+	req, err := http.NewRequest(method, urlStr, body)
+	if err != nil {
+		panic(err)
+	}
+	return req
 }
