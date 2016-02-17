@@ -200,6 +200,22 @@ func TestTail(t *testing.T) {
 	}
 }
 
+func TestNotFound(t *testing.T) {
+	p := New()
+	p.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(123)
+	})
+	p.Post("/bar", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+	for _, path := range []string{"/foo", "/bar"} {
+		res := httptest.NewRecorder()
+		p.ServeHTTP(res, newRequest("GET", path, nil))
+		if res.Code != 123 {
+			t.Errorf("for path %q: got code %d; want 123", path, res.Code)
+		}
+	}
+}
+
 func newRequest(method, urlStr string, body io.Reader) *http.Request {
 	req, err := http.NewRequest(method, urlStr, body)
 	if err != nil {

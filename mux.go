@@ -89,8 +89,14 @@ import (
 // convenience, PatternServeMux will add the Allow header for requests that
 // match a pattern for a method other than the method requested and set the
 // Status to "405 Method Not Allowed".
+//
+// If the NotFound handler is set, then it is used whenever the pattern doesn't
+// match the request path for the current method (and the Allow header is not
+// altered).
 type PatternServeMux struct {
-	// NotFound allows you to register a custom not found handler
+	// NotFound, if set, is used whenever the request doesn't match any
+	// pattern for its method. NotFound should be set before serving any
+	// requests.
 	NotFound http.Handler
 	handlers map[string][]*patHandler
 }
@@ -113,6 +119,11 @@ func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if p.NotFound != nil {
+		p.NotFound.ServeHTTP(w, r)
+		return
+	}
+
 	allowed := make([]string, 0, len(p.handlers))
 	for meth, handlers := range p.handlers {
 		if meth == r.Method {
@@ -127,11 +138,7 @@ func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(allowed) == 0 {
-		if p.NotFound != nil {
-			p.NotFound.ServeHTTP(w, r)
-		} else {
-			http.NotFound(w, r)
-		}
+		http.NotFound(w, r)
 		return
 	}
 
