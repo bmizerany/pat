@@ -1,37 +1,41 @@
 # pat (formerly pat.go) - A Sinatra style pattern muxer for Go's net/http library
 
+[![GoDoc](http://godoc.org/github.com/bmizerany/pat?status.svg)](http://godoc.org/github.com/bmizerany/pat) 
+
 ## INSTALL
 
 	$ go get github.com/bmizerany/pat
 
 ## USE
 
-	package main
+```go
+package main
 
-	import (
-		"io"
-		"net/http"
-		"github.com/bmizerany/pat"
-		"log"
-	)
+import (
+	"io"
+	"net/http"
+	"github.com/bmizerany/pat"
+	"log"
+)
 
-	// hello world, the web server
-	func HelloServer(w http.ResponseWriter, req *http.Request) {
-		io.WriteString(w, "hello, "+req.URL.Query().Get(":name")+"!\n")
+// hello world, the web server
+func HelloServer(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "hello, "+req.URL.Query().Get(":name")+"!\n")
+}
+
+func main() {
+	m := pat.New()
+	m.Get("/hello/:name", http.HandlerFunc(HelloServer))
+
+	// Register this pat with the default serve mux so that other packages
+	// may also be exported. (i.e. /debug/pprof/*)
+	http.Handle("/", m)
+	err := http.ListenAndServe(":12345", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
 	}
-
-	func main() {
-		m := pat.New()
-		m.Get("/hello/:name", http.HandlerFunc(HelloServer))
-
-		// Register this pat with the default serve mux so that other packages
-		// may also be exported. (i.e. /debug/pprof/*)
-		http.Handle("/", m)
-		err := http.ListenAndServe(":12345", nil)
-		if err != nil {
-			log.Fatal("ListenAndServe: ", err)
-		}
-	}
+}
+```
 
 It's that simple.
 
