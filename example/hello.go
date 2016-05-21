@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/bmizerany/pat"
 )
@@ -20,7 +21,13 @@ func main() {
 	// Register this pat with the default serve mux so that other packages
 	// may also be exported. (i.e. /debug/pprof/*)
 	http.Handle("/", m)
-	err := http.ListenAndServe(":12345", nil)
+
+	listenOnPort := os.Getenv("ON_HTTP_PORT")
+	if listenOnPort == "" {
+		listenOnPort = "12345"
+	}
+
+	err := http.ListenAndServe(":"+listenOnPort, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}

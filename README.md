@@ -1,6 +1,6 @@
 # pat (formerly pat.go) - A Sinatra style pattern muxer for Go's net/http library
 
-[![GoDoc](https://godoc.org/github.com/bmizerany/pat?status.svg)](https://godoc.org/github.com/bmizerany/pat) 
+[![GoDoc](https://godoc.org/github.com/bmizerany/pat?status.svg)](https://godoc.org/github.com/bmizerany/pat)
 
 ## INSTALL
 
@@ -36,6 +36,18 @@ func main() {
 	}
 }
 ```
+
+## Docker
+
+You can run the sample project from the example folder using a docker container.
+
+Build the docker image running the command:
+
+`docker build -t pat -f example/Dockerfile ./example`
+
+Run the docker container specifying a value for the ON_HTTP_PORT environment variable. If nothing is informed the default port is '12345'.
+
+`docker run --rm --name pat_app -it -p 8080:8080 -e ON_HTTP_PORT=8080 pat app`
 
 It's that simple.
 
