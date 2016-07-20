@@ -98,7 +98,6 @@ type PatternServeMux struct {
 	// pattern for any method. NotFound should be set before serving any
 	// requests.
 	NotFound http.Handler
-
 	handlers map[string][]*patHandler
 }
 
@@ -113,6 +112,16 @@ func New() *PatternServeMux {
 // the 405 Method Not Allowed response). This can be useful in a middleware
 // to find out if a request actually matches a registered handler.
 func (p *PatternServeMux) Lookup(method, path string) http.Handler {
+	for _, ph := range p.handlers[method] {
+		if params, ok := ph.try(path); ok {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if len(params) > 0 && !ph.redirect {
+					r.URL.RawQuery = url.Values(params).Encode() + "&" + r.URL.RawQuery
+				}
+				ph.ServeHTTP(w, r)
+			})
+		}
+	}
 	return nil
 }
 
@@ -141,14 +150,9 @@ func (p *PatternServeMux) allowedMethods(path, skip string) []string {
 // ServeHTTP matches r.URL.Path against its routing table using the rules
 // described above.
 func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for _, ph := range p.handlers[r.Method] {
-		if params, ok := ph.try(r.URL.Path); ok {
-			if len(params) > 0 && !ph.redirect {
-				r.URL.RawQuery = url.Values(params).Encode() + "&" + r.URL.RawQuery
-			}
-			ph.ServeHTTP(w, r)
-			return
-		}
+	if h := p.Lookup(r.Method, r.URL.Path); h != nil {
+		h.ServeHTTP(w, r)
+		return
 	}
 
 	allowed := p.allowedMethods(r.URL.Path, r.Method)

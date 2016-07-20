@@ -213,11 +213,11 @@ func TestNotFound(t *testing.T) {
 	})
 	p.Post("/bar", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
-	for _, path := range []string{"/foo", "/bar"} {
+	for path, want := range map[string]int{"/foo": 123, "/bar": 405} {
 		res := httptest.NewRecorder()
 		p.ServeHTTP(res, newRequest("GET", path, nil))
-		if res.Code != 123 {
-			t.Errorf("for path %q: got code %d; want 123", path, res.Code)
+		if res.Code != want {
+			t.Errorf("for path %q: got code %d; want %d", path, res.Code, want)
 		}
 	}
 }
