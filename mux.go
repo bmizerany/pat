@@ -91,19 +91,51 @@ import (
 // Status to "405 Method Not Allowed".
 //
 // If the NotFound handler is set, then it is used whenever the pattern doesn't
-// match the request path for the current method (and the Allow header is not
-// altered).
+// match the request path for any method (if it does match but for a different
+// method, the 405 Method Not Allowed response is returned instead of a 404).
 type PatternServeMux struct {
 	// NotFound, if set, is used whenever the request doesn't match any
-	// pattern for its method. NotFound should be set before serving any
+	// pattern for any method. NotFound should be set before serving any
 	// requests.
 	NotFound http.Handler
+
 	handlers map[string][]*patHandler
 }
 
 // New returns a new PatternServeMux.
 func New() *PatternServeMux {
 	return &PatternServeMux{handlers: make(map[string][]*patHandler)}
+}
+
+// Lookup returns the handler that matches the specified method and
+// path. If no registered handlers are found, it returns nil (that is,
+// it doesn't return the NotFound handler or the handler to return
+// the 405 Method Not Allowed response). This can be useful in a middleware
+// to find out if a request actually matches a registered handler.
+func (p *PatternServeMux) Lookup(method, path string) http.Handler {
+	return nil
+}
+
+// AllowedMethods returns the list of registered methods for the
+// specified path.
+func (p *PatternServeMux) AllowedMethods(path string) []string {
+	return p.allowedMethods(path, "")
+}
+
+func (p *PatternServeMux) allowedMethods(path, skip string) []string {
+	var allowed []string
+	for meth, handlers := range p.handlers {
+		if meth == skip {
+			continue
+		}
+
+		for _, ph := range handlers {
+			if _, ok := ph.try(path); ok {
+				allowed = append(allowed, meth)
+			}
+		}
+	}
+	return allowed
 }
 
 // ServeHTTP matches r.URL.Path against its routing table using the rules
@@ -119,25 +151,13 @@ func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if p.NotFound != nil {
-		p.NotFound.ServeHTTP(w, r)
-		return
-	}
-
-	allowed := make([]string, 0, len(p.handlers))
-	for meth, handlers := range p.handlers {
-		if meth == r.Method {
-			continue
-		}
-
-		for _, ph := range handlers {
-			if _, ok := ph.try(r.URL.Path); ok {
-				allowed = append(allowed, meth)
-			}
-		}
-	}
-
+	allowed := p.allowedMethods(r.URL.Path, r.Method)
 	if len(allowed) == 0 {
+		if p.NotFound != nil {
+			p.NotFound.ServeHTTP(w, r)
+			return
+		}
+
 		http.NotFound(w, r)
 		return
 	}
