@@ -309,8 +309,7 @@ func TestLookup(t *testing.T) {
 			t.Errorf("%s %s: lookup returned nil handler", r.method, r.path)
 		}
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("", "/", nil)
-		h.ServeHTTP(w, req)
+		h.ServeHTTP(w, newRequest("", "/", nil))
 		if w.Code != r.handlerIndex {
 			t.Errorf("%s %s: handler status code; got %v; want %v", r.method, r.path, w.Code, r.handlerIndex)
 		}
