@@ -213,11 +213,11 @@ func TestNotFound(t *testing.T) {
 	})
 	p.Post("/bar", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
-	for _, path := range []string{"/foo", "/bar"} {
+	for path, want := range map[string]int{"/foo": 123, "/bar": 405} {
 		res := httptest.NewRecorder()
 		p.ServeHTTP(res, newRequest("GET", path, nil))
-		if res.Code != 123 {
-			t.Errorf("for path %q: got code %d; want 123", path, res.Code)
+		if res.Code != want {
+			t.Errorf("for path %q: got code %d; want %d", path, res.Code, want)
 		}
 	}
 }
@@ -241,6 +241,96 @@ func TestMethodPatch(t *testing.T) {
 	p.ServeHTTP(res, newRequest("PATCH", "/foo/bar", nil))
 	if res.Code != http.StatusOK {
 		t.Errorf("Expected code %d, got %d", http.StatusOK, res.Code)
+	}
+}
+
+func TestRegisteredPatterns(t *testing.T) {
+	p := New()
+	p.Get("/a", http.NotFoundHandler())
+	p.Post("/b", http.NotFoundHandler())
+	p.Del("/a", http.NotFoundHandler())
+	p.Patch("/b", http.NotFoundHandler())
+	p.Patch("/b/", http.NotFoundHandler())
+
+	pats := p.RegisteredPatterns()
+	want := []string{"/a", "/b", "/b/"}
+	if !reflect.DeepEqual(want, pats) {
+		t.Errorf("got %v; want %v", pats, want)
+	}
+}
+
+func TestAllowedMethods(t *testing.T) {
+	p := New()
+	p.Get("/a", http.NotFoundHandler())
+	p.Post("/a", http.NotFoundHandler())
+	p.Post("/b", http.NotFoundHandler())
+	p.Del("/a", http.NotFoundHandler())
+	p.Patch("/b", http.NotFoundHandler())
+	p.Patch("/b/", http.NotFoundHandler())
+
+	cases := []struct {
+		path string
+		want []string
+	}{
+		{"/a", []string{"DELETE", "GET", "HEAD", "POST"}},
+		{"/b", []string{"PATCH", "POST"}},
+		{"/c", nil},
+	}
+	for _, c := range cases {
+		got := p.AllowedMethods(c.path)
+		sort.Strings(got)
+		if !reflect.DeepEqual(c.want, got) {
+			t.Errorf("%s: got %v; want %v", c.path, got, c.want)
+		}
+	}
+}
+
+type statusHandler int
+
+func (h statusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(int(h))
+}
+
+func TestLookup(t *testing.T) {
+	p := New()
+
+	// create N different handlers
+	handlers := make([]http.Handler, 5)
+	for i := 0; i < len(handlers); i++ {
+		handlers[i] = statusHandler(i)
+	}
+
+	register := []struct {
+		method       string
+		path         string
+		handlerIndex int
+	}{
+		{"HEAD", "/a", 0},
+		{"GET", "/a", 1},
+		{"POST", "/a", 2},
+		{"GET", "/b", 3},
+		{"DELETE", "/b", 4},
+	}
+
+	// register the handlers
+	for _, r := range register {
+		p.Add(r.method, r.path, handlers[r.handlerIndex])
+	}
+
+	// assert the returned Lookup handler
+	for _, r := range register {
+		h := p.Lookup(r.method, r.path)
+		if h == nil {
+			t.Errorf("%s %s: lookup returned nil handler", r.method, r.path)
+		}
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, newRequest("", "/", nil))
+		if w.Code != r.handlerIndex {
+			t.Errorf("%s %s: handler status code; got %v; want %v", r.method, r.path, w.Code, r.handlerIndex)
+		}
+	}
+	if h := p.Lookup("GET", "/c"); h != nil {
+		t.Errorf("GET /c: handler returned non-nil handler")
 	}
 }
 

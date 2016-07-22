@@ -4,6 +4,7 @@ package pat
 import (
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 )
 
@@ -91,11 +92,11 @@ import (
 // Status to "405 Method Not Allowed".
 //
 // If the NotFound handler is set, then it is used whenever the pattern doesn't
-// match the request path for the current method (and the Allow header is not
-// altered).
+// match the request path for any method (if it does match but for a different
+// method, the 405 Method Not Allowed response is returned instead of a 404).
 type PatternServeMux struct {
 	// NotFound, if set, is used whenever the request doesn't match any
-	// pattern for its method. NotFound should be set before serving any
+	// pattern for any method. NotFound should be set before serving any
 	// requests.
 	NotFound http.Handler
 	handlers map[string][]*patHandler
@@ -106,38 +107,80 @@ func New() *PatternServeMux {
 	return &PatternServeMux{handlers: make(map[string][]*patHandler)}
 }
 
-// ServeHTTP matches r.URL.Path against its routing table using the rules
-// described above.
-func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for _, ph := range p.handlers[r.Method] {
-		if params, ok := ph.try(r.URL.Path); ok {
-			if len(params) > 0 && !ph.redirect {
-				r.URL.RawQuery = url.Values(params).Encode() + "&" + r.URL.RawQuery
-			}
-			ph.ServeHTTP(w, r)
-			return
+// Lookup returns the handler that matches the specified method and
+// path. If no registered handlers are found, it returns nil (that is,
+// it doesn't return the NotFound handler or the handler to return
+// the 405 Method Not Allowed response). This can be useful in a middleware
+// to find out if a request actually matches a registered handler.
+func (p *PatternServeMux) Lookup(method, path string) http.Handler {
+	for _, ph := range p.handlers[method] {
+		if params, ok := ph.try(path); ok {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if len(params) > 0 && !ph.redirect {
+					r.URL.RawQuery = url.Values(params).Encode() + "&" + r.URL.RawQuery
+				}
+				ph.ServeHTTP(w, r)
+			})
 		}
 	}
+	return nil
+}
 
-	if p.NotFound != nil {
-		p.NotFound.ServeHTTP(w, r)
-		return
+// RegisteredPatterns returns a list of unique registered patterns.
+// As long as a pattern has been registered for one method, it is
+// returned. The list is lexically sorted.
+func (p *PatternServeMux) RegisteredPatterns() []string {
+	set := make(map[string]bool)
+	for _, pats := range p.handlers {
+		for _, ph := range pats {
+			set[ph.pat] = true
+		}
 	}
+	list := make([]string, 0, len(set))
+	for k := range set {
+		list = append(list, k)
+	}
+	sort.Strings(list)
+	return list
+}
 
-	allowed := make([]string, 0, len(p.handlers))
+// AllowedMethods returns the list of registered methods for the
+// specified path.
+func (p *PatternServeMux) AllowedMethods(path string) []string {
+	return p.allowedMethods(path, "")
+}
+
+func (p *PatternServeMux) allowedMethods(path, skip string) []string {
+	var allowed []string
 	for meth, handlers := range p.handlers {
-		if meth == r.Method {
+		if meth == skip {
 			continue
 		}
 
 		for _, ph := range handlers {
-			if _, ok := ph.try(r.URL.Path); ok {
+			if _, ok := ph.try(path); ok {
 				allowed = append(allowed, meth)
 			}
 		}
 	}
+	return allowed
+}
 
+// ServeHTTP matches r.URL.Path against its routing table using the rules
+// described above.
+func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if h := p.Lookup(r.Method, r.URL.Path); h != nil {
+		h.ServeHTTP(w, r)
+		return
+	}
+
+	allowed := p.allowedMethods(r.URL.Path, r.Method)
 	if len(allowed) == 0 {
+		if p.NotFound != nil {
+			p.NotFound.ServeHTTP(w, r)
+			return
+		}
+
 		http.NotFound(w, r)
 		return
 	}
