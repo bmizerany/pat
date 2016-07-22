@@ -4,6 +4,7 @@ package pat
 import (
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 )
 
@@ -123,6 +124,24 @@ func (p *PatternServeMux) Lookup(method, path string) http.Handler {
 		}
 	}
 	return nil
+}
+
+// RegisteredPatterns returns a list of unique registered patterns.
+// As long as a pattern has been registered for one method, it is
+// returned. The list is lexically sorted.
+func (p *PatternServeMux) RegisteredPatterns() []string {
+	set := make(map[string]bool)
+	for _, pats := range p.handlers {
+		for _, ph := range pats {
+			set[ph.pat] = true
+		}
+	}
+	list := make([]string, 0, len(set))
+	for k := range set {
+		list = append(list, k)
+	}
+	sort.Strings(list)
+	return list
 }
 
 // AllowedMethods returns the list of registered methods for the

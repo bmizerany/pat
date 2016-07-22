@@ -244,6 +244,21 @@ func TestMethodPatch(t *testing.T) {
 	}
 }
 
+func TestRegisteredPatterns(t *testing.T) {
+	p := New()
+	p.Get("/a", http.NotFoundHandler())
+	p.Post("/b", http.NotFoundHandler())
+	p.Del("/a", http.NotFoundHandler())
+	p.Patch("/b", http.NotFoundHandler())
+	p.Patch("/b/", http.NotFoundHandler())
+
+	pats := p.RegisteredPatterns()
+	want := []string{"/a", "/b", "/b/"}
+	if !reflect.DeepEqual(want, pats) {
+		t.Errorf("got %v; want %v", pats, want)
+	}
+}
+
 func TestAllowedMethods(t *testing.T) {
 	p := New()
 	p.Get("/a", http.NotFoundHandler())
