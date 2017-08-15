@@ -2,6 +2,7 @@
 package pat
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"strings"
@@ -106,13 +107,24 @@ func New() *PatternServeMux {
 	return &PatternServeMux{handlers: make(map[string][]*patHandler)}
 }
 
+type paramsKey struct{}
+
+func NewContext(ctx context.Context, params url.Values) context.Context {
+	return context.WithValue(ctx, paramsKey{}, params)
+}
+
+func FromContext(ctx context.Context) (params url.Values, ok bool) {
+	params, ok = ctx.Value(paramsKey{}).(url.Values)
+	return
+}
+
 // ServeHTTP matches r.URL.Path against its routing table using the rules
 // described above.
 func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, ph := range p.handlers[r.Method] {
 		if params, ok := ph.try(r.URL.EscapedPath()); ok {
 			if len(params) > 0 && !ph.redirect {
-				r.URL.RawQuery = url.Values(params).Encode() + "&" + r.URL.RawQuery
+				r = r.WithContext(NewContext(r.Context(), params))
 			}
 			ph.ServeHTTP(w, r)
 			return

@@ -68,9 +68,13 @@ func TestPatRoutingHit(t *testing.T) {
 	var ok bool
 	p.Get("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ok = true
-		t.Logf("%#v", r.URL.Query())
-		if got, want := r.URL.Query().Get(":name"), "keith"; got != want {
-			t.Errorf("got %q, want %q", got, want)
+		if params, found := FromContext(r.Context()); found {
+			t.Logf("%#v", params)
+			if got, want := params.Get(":name"), "keith"; got != want {
+				t.Errorf("got %q, want %q", got, want)
+			}
+		} else {
+			t.Error("Missing parameters")
 		}
 	}))
 
@@ -110,39 +114,18 @@ func TestPatRoutingMethodNotAllowed(t *testing.T) {
 	}
 }
 
-// Check to make sure we don't pollute the Raw Query when we have no parameters
 func TestPatNoParams(t *testing.T) {
 	p := New()
 
 	var ok bool
 	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ok = true
-		t.Logf("%#v", r.URL.RawQuery)
-		if r.URL.RawQuery != "" {
-			t.Errorf("RawQuery was %q; should be empty", r.URL.RawQuery)
+		if params, found := FromContext(r.Context()); found {
+			t.Errorf("Params were %q; should be empty", params)
 		}
 	}))
 
 	p.ServeHTTP(nil, newRequest("GET", "/foo/", nil))
-	if !ok {
-		t.Error("handler not called")
-	}
-}
-
-// Check to make sure we don't pollute the Raw Query when there are parameters but no pattern variables
-func TestPatOnlyUserParams(t *testing.T) {
-	p := New()
-
-	var ok bool
-	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ok = true
-		t.Logf("%#v", r.URL.RawQuery)
-		if got, want := r.URL.RawQuery, "a=b"; got != want {
-			t.Errorf("for RawQuery: got %q; want %q", got, want)
-		}
-	}))
-
-	p.ServeHTTP(nil, newRequest("GET", "/foo/?a=b", nil))
 	if !ok {
 		t.Error("handler not called")
 	}
