@@ -244,6 +244,24 @@ func TestMethodPatch(t *testing.T) {
 	}
 }
 
+func TestEscapedUrl(t *testing.T) {
+	p := New()
+
+	var ok bool
+	p.Get("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ok = true
+		t.Logf("%#v", r.URL.Query())
+		if got, want := r.URL.Query().Get(":name"), "bad/bear"; got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	}))
+
+	p.ServeHTTP(nil, newRequest("GET", "/foo/bad%2fbear?a=b", nil))
+	if !ok {
+		t.Error("handler not called")
+	}
+}
+
 func newRequest(method, urlStr string, body io.Reader) *http.Request {
 	req, err := http.NewRequest(method, urlStr, body)
 	if err != nil {
