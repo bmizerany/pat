@@ -2,6 +2,7 @@
 package pat
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"strings"
@@ -101,6 +102,19 @@ type PatternServeMux struct {
 	handlers map[string][]*patHandler
 }
 
+type contextKey int
+
+const (
+	// inspired by mux and other routers
+	// preserve the matched pattern that can be referenced in the lifetime
+	// of a handler.
+	// This is useful for telemetry and instrumentation to use the pattern
+	// AND not the whole URL, which can result in cardinality explosion.
+	//
+	// For compatibility with most other mux like gorilla, mux, use count=2
+	routeKey contextKey = iota + 1
+)
+
 // New returns a new PatternServeMux.
 func New() *PatternServeMux {
 	return &PatternServeMux{handlers: make(map[string][]*patHandler)}
@@ -114,7 +128,10 @@ func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if len(params) > 0 && !ph.redirect {
 				r.URL.RawQuery = url.Values(params).Encode() + "&" + r.URL.RawQuery
 			}
-			ph.ServeHTTP(w, r)
+
+			// Set the routeKey in context to the current pattern.
+			ctx := context.WithValue(r.Context(), routeKey, ph.pat)
+			ph.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 	}

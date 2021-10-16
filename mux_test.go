@@ -72,6 +72,15 @@ func TestPatRoutingHit(t *testing.T) {
 		if got, want := r.URL.Query().Get(":name"), "keith"; got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
+
+		if rk := r.Context().Value(routeKey); rk != nil {
+			if rk.(string) != "/foo/:name" {
+				t.Errorf("routeKey %v does not match /foo/:name", rk)
+			}
+		} else {
+			t.Error("Should've found routeKey /foo/:name")
+		}
+
 	}))
 
 	p.ServeHTTP(nil, newRequest("GET", "/foo/keith?a=b", nil))
@@ -120,6 +129,14 @@ func TestPatNoParams(t *testing.T) {
 		t.Logf("%#v", r.URL.RawQuery)
 		if r.URL.RawQuery != "" {
 			t.Errorf("RawQuery was %q; should be empty", r.URL.RawQuery)
+		}
+
+		if rk := r.Context().Value(routeKey); rk != nil {
+			if rk.(string) != "/foo/" {
+				t.Errorf("routeKey %v does not match /foo/:name", rk)
+			}
+		} else {
+			t.Error("Should've found routeKey /foo/:name")
 		}
 	}))
 
