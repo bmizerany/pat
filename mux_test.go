@@ -73,7 +73,7 @@ func TestPatRoutingHit(t *testing.T) {
 			t.Errorf("got %q, want %q", got, want)
 		}
 
-		if rk := r.Context().Value(routeKey); rk != nil {
+		if rk := r.Context().Value(RouteKey); rk != nil {
 			if rk.(string) != "/foo/:name" {
 				t.Errorf("routeKey %v does not match /foo/:name", rk)
 			}
@@ -131,7 +131,7 @@ func TestPatNoParams(t *testing.T) {
 			t.Errorf("RawQuery was %q; should be empty", r.URL.RawQuery)
 		}
 
-		if rk := r.Context().Value(routeKey); rk != nil {
+		if rk := r.Context().Value(RouteKey); rk != nil {
 			if rk.(string) != "/foo/" {
 				t.Errorf("routeKey %v does not match /foo/:name", rk)
 			}
