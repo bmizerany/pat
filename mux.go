@@ -98,8 +98,27 @@ type PatternServeMux struct {
 	// NotFound, if set, is used whenever the request doesn't match any
 	// pattern for its method. NotFound should be set before serving any
 	// requests.
-	NotFound http.Handler
-	handlers map[string][]*patHandler
+	NotFound    http.Handler
+	handlers    map[string][]*patHandler
+	middlewares []MiddlewareFunc
+}
+
+// MiddlewareFunc is a function which receives an http.Handler and returns
+// another http.Handler.
+// Typically, the returned handler is a closure which does something with the
+// http.ResponseWriter and http.Request passed
+// to it, and then calls the handler passed as parameter to the MiddlewareFunc.
+type MiddlewareFunc func(http.Handler) http.Handler
+
+// middleware interface is anything which implements a MiddlewareFunc named
+// Middleware.
+type middleware interface {
+	Middleware(handler http.Handler) http.Handler
+}
+
+// Middleware allows MiddlewareFunc to implement the middleware interface.
+func (mw MiddlewareFunc) Middleware(handler http.Handler) http.Handler {
+	return mw(handler)
 }
 
 type contextKey int
@@ -118,6 +137,13 @@ func New() *PatternServeMux {
 	return &PatternServeMux{handlers: make(map[string][]*patHandler)}
 }
 
+// Use appends a MiddlewareFunc to the chain. Middleware can be used to intercept or otherwise modify requests and/or responses, and are executed in the order that they are applied to the Router.
+func (p *PatternServeMux) Use(mwf ...MiddlewareFunc) {
+	for _, fn := range mwf {
+		p.middlewares = append(p.middlewares, fn)
+	}
+}
+
 // ServeHTTP matches r.URL.Path against its routing table using the rules
 // described above.
 func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -129,7 +155,14 @@ func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			// Set the routeKey in context to the current pattern.
 			ctx := context.WithValue(r.Context(), RouteKey, ph.pat)
-			ph.ServeHTTP(w, r.WithContext(ctx))
+
+			h := ph.Handler
+			// Build middleware chain if no error was found
+			for i := len(p.middlewares) - 1; i >= 0; i-- {
+				h = p.middlewares[i].Middleware(h)
+			}
+
+			h.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 	}
