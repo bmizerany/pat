@@ -279,6 +279,40 @@ func TestEscapedUrl(t *testing.T) {
 	}
 }
 
+func TestMiddleware(t *testing.T) {
+	mdf := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			q := r.URL.Query()
+			q.Set("middleware", "passed")
+
+			r.URL.RawQuery = q.Encode()
+
+			h.ServeHTTP(w, r)
+		})
+	}
+
+	p := New()
+
+	var middlewareCalled bool
+	p.Get("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Logf("%#v", r.URL.Query())
+		if got, want := r.URL.Query().Get("middleware"), "passed"; got != want {
+			t.Errorf("got %q, want %q", got, want)
+		} else {
+			middlewareCalled = true
+		}
+	}))
+
+	// use middleware
+	p.Use(mdf)
+
+	p.ServeHTTP(nil, newRequest("GET", "/foo/bad", nil))
+
+	if !middlewareCalled {
+		t.Error("middleware not called")
+	}
+}
+
 func newRequest(method, urlStr string, body io.Reader) *http.Request {
 	req, err := http.NewRequest(method, urlStr, body)
 	if err != nil {
