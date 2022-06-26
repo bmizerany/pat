@@ -1,0 +1,51 @@
+name: Plan
+
+on: [push]
+
+jobs:
+  Plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-go@v2
+      with:
+        go-version: "1.16"
+
+    - name: Run hclfmt get
+      run: GO111MODULE=on go get github.com/hashicorp/hcl/v2/cmd/hclfmt
+
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
+    - name: Download iox batteries
+      run: |
+        payload='{"action": "iox_batteries","bucket_name": "last9-iox-repository","repo_name": "${{github.repository}}"}'
+        sig=$(echo -n $payload | openssl sha1 -hmac "${{secrets.LAST9_API_KEY}}" | awk -F '=' '{ print $2 }')
+        url=$(curl --http1.1 -H "Accept: application/json" -H "Content-Type: application/json" -H "X-Hub-Signature: $sig" --data "$payload" "https://of0kuhlkfa.execute-api.ap-south-1.amazonaws.com/prod")
+        curl "$url" --output iox_batteries.tar.gz && tar -xvf iox_batteries.tar.gz && rm iox_batteries.tar.gz
+
+    - name: Notify if push in master
+      if: github.ref == 'refs/heads/master'
+      run: bash notify.sh "started" ${{github.repository}}
+    
+    - name: Validation
+      run: make validate
+        
+    - name: Lint hclfmt
+      run: make lint
+
+    - name: Run Plan
+      run: |
+        echo "y" | make plan
+
+    - name: Publish
+      if: github.ref == 'refs/heads/master'
+      env:
+        API_SECRET: ${{secrets.LAST9_API_KEY}}
+      run: |
+        echo "y" | make publish-iox REPO_NAME=${{github.repository}}
+
+    - name: Notify
+      if: ${{ always() && job.status == 'failure' }}
+      run: bash notify.sh "failed" ${{github.repository}}
+
