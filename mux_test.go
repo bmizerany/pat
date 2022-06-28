@@ -72,6 +72,15 @@ func TestPatRoutingHit(t *testing.T) {
 		if got, want := r.URL.Query().Get(":name"), "keith"; got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
+
+		if rk := r.Context().Value(RouteKey); rk != nil {
+			if rk.(string) != "/foo/:name" {
+				t.Errorf("routeKey %v does not match /foo/:name", rk)
+			}
+		} else {
+			t.Error("Should've found routeKey /foo/:name")
+		}
+
 	}))
 
 	p.ServeHTTP(nil, newRequest("GET", "/foo/keith?a=b", nil))
@@ -120,6 +129,14 @@ func TestPatNoParams(t *testing.T) {
 		t.Logf("%#v", r.URL.RawQuery)
 		if r.URL.RawQuery != "" {
 			t.Errorf("RawQuery was %q; should be empty", r.URL.RawQuery)
+		}
+
+		if rk := r.Context().Value(RouteKey); rk != nil {
+			if rk.(string) != "/foo/" {
+				t.Errorf("routeKey %v does not match /foo/:name", rk)
+			}
+		} else {
+			t.Error("Should've found routeKey /foo/:name")
 		}
 	}))
 
@@ -259,6 +276,40 @@ func TestEscapedUrl(t *testing.T) {
 	p.ServeHTTP(nil, newRequest("GET", "/foo/bad%2fbear?a=b", nil))
 	if !ok {
 		t.Error("handler not called")
+	}
+}
+
+func TestMiddleware(t *testing.T) {
+	mdf := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			q := r.URL.Query()
+			q.Set("middleware", "passed")
+
+			r.URL.RawQuery = q.Encode()
+
+			h.ServeHTTP(w, r)
+		})
+	}
+
+	p := New()
+
+	var middlewareCalled bool
+	p.Get("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Logf("%#v", r.URL.Query())
+		if got, want := r.URL.Query().Get("middleware"), "passed"; got != want {
+			t.Errorf("got %q, want %q", got, want)
+		} else {
+			middlewareCalled = true
+		}
+	}))
+
+	// use middleware
+	p.Use(mdf)
+
+	p.ServeHTTP(nil, newRequest("GET", "/foo/bad", nil))
+
+	if !middlewareCalled {
+		t.Error("middleware not called")
 	}
 }
 
